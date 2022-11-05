@@ -9,6 +9,7 @@ contract RPS {
     mapping(address=>bytes32) public commitHashes;
 
     mapping(address=>bool) public playingNow; 
+    mapping(address=>bool) public alreadyRevealed;
 
     event GameStarted(address, address);
 
@@ -31,9 +32,19 @@ contract RPS {
         commitHashes[msg.sender] = hashFromVote;
     }
 
-    function makeReveal() external {
+    function makeReveal(string calldata actualVote, address otherPlayer) external {
+        require(opponent[msg.sender] == otherPlayer || opponent[otherPlayer] == msg.sender,
+        'That is not your actual opponent');
 
+        require(commitHashes[msg.sender] != 0, 'You should make a commit at first');
+        require(commitHashes[otherPlayer] != 0, 'Your opponent haven\'t made a commit yet');
 
+        alreadyRevealed[msg.sender] = true;
+        if (alreadyRevealed[msg.sender] && alreadyRevealed[otherPlayer]) 
+            finishGame(msg.sender, otherPlayer);
     }
 
+    function finishGame(address pl1, address pl2) private {
+        emit GameStarted(pl1, pl2);
+    }
 }

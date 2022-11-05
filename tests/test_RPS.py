@@ -1,3 +1,4 @@
+from asyncio.constants import ACCEPT_RETRY_DELAY
 from brownie import RPS, accounts
 import brownie, pytest
 
@@ -35,3 +36,9 @@ def test_makeCommitWithoutOpponent(contract):
         accounts[0], {'from' : accounts[3]})
 
 def test_makeNormalCommit(contract):
+    contract.startGame(accounts[0], {'from' : accounts[1]})
+    contract.makeCommit('6362ca2c8185d05dd5aa73afffe3abde3e88b9c06abc045b6061f18bc9dfdf90',
+        accounts[1], {'from' : accounts[0]})
+    
+    assert contract.commitHashes(accounts[0]) == '0x6362ca2c8185d05dd5aa73afffe3abde3e' \
+        '88b9c06abc045b6061f18bc9dfdf90'
