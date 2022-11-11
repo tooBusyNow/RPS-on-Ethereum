@@ -13,7 +13,13 @@ contract RPS {
     mapping(address=>string) private revealedValues;
 
     event GameStarted(address, address);
-    event FinishGame(address);
+    event AnnounceWinner(address);
+    event AnnounceDraw(address, address);
+
+    bytes32 internal kecForZero =  keccak256(abi.encode(bytes('0')));
+    bytes32 internal kecForOne  =  keccak256(abi.encode(bytes('1')));
+    bytes32 internal kecForTwo  =  keccak256(abi.encode(bytes('2')));
+
 
     modifier checkOpponent (address otherPlayer){
         require(opponent[msg.sender] == otherPlayer || opponent[otherPlayer] == msg.sender,
@@ -45,14 +51,40 @@ contract RPS {
         revealedValues[msg.sender] = actualVote;
     }
 
+    /* 
+        0 - Rock
+        1 - Paper
+        2 - Scissors
+    */
+
     function finishGame(address otherPlayer) checkOpponent(otherPlayer) external {
-        require(alreadyRevealed[msg.sender] == true, 'You haven\'t revealed et');
+
+        bool senderFlag = alreadyRevealed[msg.sender];        
+
+        require(senderFlag == true, 'You haven\'t revealed yet');
         require(alreadyRevealed[otherPlayer] == true, 'Your opponent haven\'t revealed');
 
-        /* TODO keccak and cases*/
+        require(commitHashes[msg.sender] == getKeccak(revealedValues[msg.sender]), 
+        'You\'ve send an incorrect revealed value');
+
+        require(commitHashes[otherPlayer] == getKeccak(revealedValues[otherPlayer]),
+        'It seems like your opponent send an incorrect revealed value' );
+
+        bytes32 senderVote = keccak256(abi.encode(bytes(revealedValues[msg.sender])[0]));
+        bytes32 opponentVote = keccak256(abi.encode(bytes(revealedValues[otherPlayer])[0]));
+ 
+ 
+        if (senderVote == opponentVote)
+            emit AnnounceDraw(msg.sender, otherPlayer);
+        else if ( (senderVote == kecForZero && opponentVote == kecForTwo) || 
+                  (senderVote == kecForOne && opponentVote == kecForZero) || 
+                  (senderVote == kecForTwo && opponentVote == kecForOne ) )
+            emit AnnounceWinner(msg.sender);
+        else
+            emit AnnounceWinner(otherPlayer);
     }
 
-    function getKeccak(string calldata someValue) private pure returns (bytes32) {
+    function getKeccak(string memory someValue) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(someValue));
     }
 }
